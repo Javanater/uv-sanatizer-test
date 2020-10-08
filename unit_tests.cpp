@@ -92,37 +92,25 @@ BOOST_AUTO_TEST_CASE(sanatize_coverage) {
   BOOST_TEST(sanatize(false, 0) == false);
   BOOST_TEST(sanatize.get_state() == sanatize_task_t::IDLE);
 
-  BOOST_TEST(sanatize(true, 1) == false);
-  BOOST_TEST(sanatize.get_state() == sanatize_task_t::IDLE_WAIT_FOR_RELEASE);
-
-  BOOST_TEST(sanatize(true, 2) == false);
-  BOOST_TEST(sanatize.get_state() == sanatize_task_t::IDLE_WAIT_FOR_RELEASE);
-
-  BOOST_TEST(sanatize(false, 3) == true);
+  BOOST_TEST(sanatize(true, 1) == true);
   BOOST_TEST(sanatize.get_state() == sanatize_task_t::SANATIZE);
 
-  BOOST_TEST(sanatize(false, 4) == true);
+  BOOST_TEST(sanatize(false, 2) == true);
   BOOST_TEST(sanatize.get_state() == sanatize_task_t::SANATIZE);
 
-  BOOST_TEST(sanatize(true, 5) == false);
-  BOOST_TEST(sanatize.get_state() == sanatize_task_t::CANCEL_WAIT_FOR_RELEASE);
+  BOOST_TEST(sanatize(true, 3) == false);
+  BOOST_TEST(sanatize.get_state() == sanatize_task_t::COOL_DOWN);
 
-  BOOST_TEST(sanatize(true, 6) == false);
-  BOOST_TEST(sanatize.get_state() == sanatize_task_t::CANCEL_WAIT_FOR_RELEASE);
+  BOOST_TEST(sanatize(true, 4) == false);
+  BOOST_TEST(sanatize.get_state() == sanatize_task_t::COOL_DOWN);
+
+  BOOST_TEST(sanatize(false, 5) == false);
+  BOOST_TEST(sanatize.get_state() == sanatize_task_t::COOL_DOWN);
 
   BOOST_TEST(sanatize(false, 7) == false);
   BOOST_TEST(sanatize.get_state() == sanatize_task_t::COOL_DOWN);
 
-  BOOST_TEST(sanatize(true, 8) == false);
-  BOOST_TEST(sanatize.get_state() == sanatize_task_t::COOL_DOWN);
-
-  BOOST_TEST(sanatize(false, 9) == false);
-  BOOST_TEST(sanatize.get_state() == sanatize_task_t::COOL_DOWN);
-
-  BOOST_TEST(sanatize(false, 11) == false);
-  BOOST_TEST(sanatize.get_state() == sanatize_task_t::COOL_DOWN);
-
-  BOOST_TEST(sanatize(false, 12) == false);
+  BOOST_TEST(sanatize(false, 8) == false);
   BOOST_TEST(sanatize.get_state() == sanatize_task_t::IDLE);
 }
 
