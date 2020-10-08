@@ -2,6 +2,7 @@
 #include <boost/test/included/unit_test.hpp>
 
 #include "../uv-sanatizer/debounce_task.hpp"
+#include "../uv-sanatizer/rising_edge_task.hpp"
 #include "../uv-sanatizer/sanatize_task.hpp"
 
 BOOST_AUTO_TEST_SUITE(uv_suite)
@@ -112,6 +113,24 @@ BOOST_AUTO_TEST_CASE(sanatize_coverage) {
 
   BOOST_TEST(sanatize(false, 8) == false);
   BOOST_TEST(sanatize.get_state() == sanatize_task_t::IDLE);
+}
+
+BOOST_AUTO_TEST_CASE(rising_edge_coverage) {
+  {
+    rising_edge_task_t rising_edge;
+    BOOST_TEST(rising_edge(false) == false);
+    BOOST_TEST(rising_edge(false) == false);
+    BOOST_TEST(rising_edge(true) == true);
+    BOOST_TEST(rising_edge(true) == false);
+    BOOST_TEST(rising_edge(false) == false);
+    BOOST_TEST(rising_edge(true) == true);
+  }
+
+  {
+    rising_edge_task_t rising_edge;
+    BOOST_TEST(rising_edge(true) == true);
+    BOOST_TEST(rising_edge(true) == false);
+  }
 }
 
 BOOST_AUTO_TEST_SUITE_END()
