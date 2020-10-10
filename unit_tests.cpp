@@ -1,5 +1,6 @@
 #define BOOST_TEST_MODULE example
 #include <boost/test/included/unit_test.hpp>
+#include <limits>
 
 #include "../uv-sanatizer/debounce_task.hpp"
 #include "../uv-sanatizer/rising_edge_task.hpp"
@@ -84,8 +85,8 @@ BOOST_AUTO_TEST_CASE(debounce_coverage) {
 }
 
 BOOST_AUTO_TEST_CASE(sanatize_coverage) {
-  long long const sanatize_time = 10;
-  long long const cool_down_time = 5;
+  duration_t const sanatize_time = 10;
+  duration_t const cool_down_time = 5;
   sanatize_task_t sanatize(sanatize_time, cool_down_time);
 
   BOOST_TEST(sanatize.get_state() == sanatize_task_t::IDLE);
@@ -112,6 +113,55 @@ BOOST_AUTO_TEST_CASE(sanatize_coverage) {
   BOOST_TEST(sanatize.get_state() == sanatize_task_t::COOL_DOWN);
 
   BOOST_TEST(sanatize(false, 8) == false);
+  BOOST_TEST(sanatize.get_state() == sanatize_task_t::IDLE);
+}
+
+BOOST_AUTO_TEST_CASE(sanatize_overflow) {
+  duration_t const sanatize_time = 10;
+  duration_t const cool_down_time = 5;
+  sanatize_task_t sanatize(sanatize_time, cool_down_time);
+
+  BOOST_TEST(sanatize.get_state() == sanatize_task_t::IDLE);
+
+  auto current_time = std::numeric_limits<timepoint_t>::max(); // 255
+  BOOST_TEST(sanatize(true, current_time) == true);
+  BOOST_TEST(sanatize.get_state() == sanatize_task_t::SANATIZE);
+
+  current_time += 1; // 0; 0 - 255 = 1
+  BOOST_TEST(sanatize(false, current_time) == true);
+  BOOST_TEST(sanatize.get_state() == sanatize_task_t::SANATIZE);
+
+  current_time += sanatize_time - 2; // 8; 8 - 255 = 9
+  BOOST_TEST(sanatize(false, current_time) == true);
+  BOOST_TEST(sanatize.get_state() == sanatize_task_t::SANATIZE);
+
+  current_time += 1; // 9; 9 - 255 = 10
+  BOOST_TEST(sanatize(false, current_time) == false);
+  BOOST_TEST(sanatize.get_state() == sanatize_task_t::COOL_DOWN);
+}
+
+BOOST_AUTO_TEST_CASE(cool_down_overflow) {
+  duration_t const sanatize_time = 10;
+  duration_t const cool_down_time = 5;
+  sanatize_task_t sanatize(sanatize_time, cool_down_time);
+
+  BOOST_TEST(sanatize.get_state() == sanatize_task_t::IDLE);
+
+  auto current_time =
+      std::numeric_limits<timepoint_t>::max() - sanatize_time; // 255 - 10 = 245
+  BOOST_TEST(sanatize(true, current_time) == true);
+  BOOST_TEST(sanatize.get_state() == sanatize_task_t::SANATIZE);
+
+  current_time += sanatize_time; // 255
+  BOOST_TEST(sanatize(false, current_time) == false);
+  BOOST_TEST(sanatize.get_state() == sanatize_task_t::COOL_DOWN);
+
+  current_time += 1; // 0; 0 - 255 = 1
+  BOOST_TEST(sanatize(false, current_time) == false);
+  BOOST_TEST(sanatize.get_state() == sanatize_task_t::COOL_DOWN);
+
+  current_time += cool_down_time - 1; // 4; 4 - 255 = 5
+  BOOST_TEST(sanatize(false, current_time) == false);
   BOOST_TEST(sanatize.get_state() == sanatize_task_t::IDLE);
 }
 
