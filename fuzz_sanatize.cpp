@@ -1,4 +1,4 @@
-#include "../uv-sanatizer/debounce_task.hpp"
+#include "../uv-sanatizer/sanatize_task.hpp"
 #include <array>
 #include <bits/stdint-uintn.h>
 #include <boost/optional.hpp>
@@ -23,12 +23,26 @@ union long_long_arr {
 
 auto decode_input(const uint8_t *Data, size_t Size) {
   if (Size < sizeof(long long))
-    return std::make_tuple(boost::optional<long long>{}, std::vector<params>{});
+    return std::make_tuple(boost::optional<long long>{},
+                           boost::optional<long long>{}, std::vector<params>{});
 
   long_long_arr lla;
 
   for (auto i = 0; i < sizeof(long long); ++i) {
     lla.a[i] = Data[i];
+  }
+
+  Size -= sizeof(long long);
+  Data += sizeof(long long);
+
+  if (Size < sizeof(long long))
+    return std::make_tuple(boost::optional<long long>{lla.l},
+                           boost::optional<long long>{}, std::vector<params>{});
+
+  long_long_arr lla2;
+
+  for (auto i = 0; i < sizeof(long long); ++i) {
+    lla2.a[i] = Data[i];
   }
 
   Size -= sizeof(long long);
@@ -48,21 +62,22 @@ auto decode_input(const uint8_t *Data, size_t Size) {
     Data += sizeof(params);
   }
 
-  return std::make_tuple(boost::optional<long long>{lla.l}, params_vec);
+  return std::make_tuple(boost::optional<long long>{lla.l},
+                         boost::optional<long long>{lla2.l}, params_vec);
 }
 
 // Fuzzer that attempts to invoke undefined behavior
 // cppcheck-suppress unusedFunction symbolName=LLVMFuzzerTestOneInput
 extern "C" int LLVMFuzzerTestOneInput(const uint8_t *Data, size_t Size) {
-  auto [debounce_time, params_list] = decode_input(Data, Size);
+  auto [sanatize_time, cool_down_time, params_list] = decode_input(Data, Size);
 
-  if (!debounce_time)
+  if (!sanatize_time || !cool_down_time)
     return 0;
 
-  debounce_task_t debounce(*debounce_time);
+  sanatize_task_t sanatize(*sanatize_time, *cool_down_time);
 
   for (auto const &params : params_list) {
-    debounce(params.active, params.time);
+    sanatize(params.active, params.time);
   }
 
   return 0;
